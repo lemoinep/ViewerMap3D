@@ -265,8 +265,7 @@ def main():
     
     if QFullScreen:
         size = pyautogui.size()
-        window_width, window_height = size.width, size.height
-        glutInitWindowSize(window_width, window_height)
+        glutInitWindowSize(size.width,size.height)
         glutInitWindowPosition(0, 0)
         glutCreateWindow(b"Planar Map 3D")
         glutFullScreen()
