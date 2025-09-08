@@ -7,6 +7,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from PIL import Image
+import pyautogui
 
 texture_path = "T.jpg"
 heightmap_path = "H.jpg"
@@ -293,6 +294,10 @@ def main():
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
     
     if QFullScreen:
+        size = pyautogui.size()
+        window_width, window_height = size.width, size.height
+        glutInitWindowSize(window_width, window_height)
+        glutInitWindowPosition(0, 0)
         glutCreateWindow(b"Spherical Map 3D")
         glutFullScreen()
     else:        
