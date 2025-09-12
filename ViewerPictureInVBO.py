@@ -96,7 +96,7 @@ def cursor_pos_callback(window, xpos, ypos):
 def scroll_callback(window, xoffset, yoffset):
     global distance
     distance -= yoffset * 0.1
-    distance = max(0.5, min(10.0, distance))  # Limit zoom distance
+    distance = max(0.1, min(10.0, distance))
 
 def key_callback(window, key, scancode, action, mods):
     if key == glfw.KEY_ESCAPE and action == glfw.PRESS:

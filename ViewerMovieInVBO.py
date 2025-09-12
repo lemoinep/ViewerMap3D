@@ -80,7 +80,7 @@ def cursor_pos_callback(window, xpos, ypos):
 def scroll_callback(window, xoffset, yoffset):
     global distance
     distance -= yoffset * 0.1
-    distance = max(0.5, min(10.0, distance))
+    distance = max(0.1, min(10.0, distance))
 
 def key_callback(window, key, scancode, action, mods):
     global paused
@@ -138,6 +138,10 @@ def main(video_path, enable_spotlight=False, enable_fullscreen=False):
     glfw.set_key_callback(window, key_callback)
 
     cap = cv2.VideoCapture(video_path)
+    
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    print("fps="+str(fps))
+    
     if not cap.isOpened():
         glfw.terminate()
         raise RuntimeError("Unable to open video file")
@@ -178,6 +182,8 @@ def main(video_path, enable_spotlight=False, enable_fullscreen=False):
 
         if not paused:
             ret, frame = cap.read()
+            cv2.waitKey(int(1000.0/fps))
+            
             if not ret or frame is None:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 ret, frame = cap.read()
