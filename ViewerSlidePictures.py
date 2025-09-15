@@ -16,6 +16,10 @@ distance = 3.0
 vbo_vertices = None
 vbo_texcoords = None
 
+obj_pos_x, obj_pos_y, obj_pos_z = 0.0, 0.0, 0.0
+obj_rot_angle_x, obj_rot_angle_y, obj_rot_angle_z = 0.0, 0.0, 0.0
+obj_scale_x, obj_scale_y, obj_scale_z = 1.0, 1.0, 1.0
+
 texture_ids = []
 image_sizes = []
 current_image_index = 0
@@ -100,10 +104,23 @@ def scroll_callback(window, xoffset, yoffset):
 
 def key_callback(window, key, scancode, action, mods):
     global current_image_index
+    global obj_pos_x,obj_pos_y,obj_pos_z
     if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
         glfw.set_window_should_close(window, True)
     if key == glfw.KEY_SPACE and action == glfw.PRESS:
         current_image_index = (current_image_index + 1) % len(texture_ids)
+        
+    if action == glfw.PRESS or action == glfw.REPEAT:
+        delta_pos = 0.01
+        delta_fps = 1
+        if key == glfw.KEY_KP_4: 
+            obj_pos_x -= delta_pos
+        elif key == glfw.KEY_KP_6:  
+            obj_pos_x += delta_pos
+        elif key == glfw.KEY_KP_8: 
+            obj_pos_y += delta_pos
+        elif key == glfw.KEY_KP_2:  
+            obj_pos_y -= delta_pos
 
 def setup_projection(window_width, window_height):
     gl.glMatrixMode(gl.GL_PROJECTION)
@@ -189,6 +206,14 @@ def main(directory_path, enable_spotlight=False, enable_fullscreen=False):
         cam_y = distance * math.sin(math.radians(pitch))
         cam_z = distance * math.cos(math.radians(pitch)) * math.cos(math.radians(yaw))
         gluLookAt(cam_x, cam_y, cam_z, 0, 0, 0, 0, 1, 0)
+        
+        
+        # Position, rotation et scale de l'objet
+        gl.glTranslatef(obj_pos_x, obj_pos_y, obj_pos_z)
+        gl.glRotatef(obj_rot_angle_x, 1, 0, 0)
+        gl.glRotatef(obj_rot_angle_y, 0, 1, 0)
+        gl.glRotatef(obj_rot_angle_z, 0, 0, 1)
+        gl.glScalef(obj_scale_x, obj_scale_y, obj_scale_z)
 
         # Check if image size changed, update VBOs
         w, h = image_sizes[current_image_index]
