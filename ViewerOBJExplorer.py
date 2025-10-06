@@ -12,9 +12,11 @@ import OpenGL.arrays.vbo as glvbo
 
 Image.MAX_IMAGE_PIXELS = None
 
-angle_x = 30.0
+angle_x = -30.0
 angle_y = -45.0
-zoom = 150.0
+cam_pos = np.array([0.0, 5.0, 10.0], dtype=np.float32)
+move_speed = 1.0
+
 mouse_left_down = False
 mouse_x, mouse_y = 0, 0
 
@@ -34,7 +36,24 @@ texture_ids = {}
 vbo_dict = {}
 
 QFullScreen = False
-QTexture = True 
+QTexture = True  
+
+def normalize(v):
+    norm = np.linalg.norm(v)
+    if norm > 0:
+        return v / norm
+    return v
+
+def compute_camera_vectors():
+    front_x = np.cos(np.radians(angle_x)) * np.sin(np.radians(angle_y))
+    front_y = np.sin(np.radians(angle_x))
+    front_z = np.cos(np.radians(angle_x)) * np.cos(np.radians(angle_y))
+    camera_front = np.array([front_x, front_y, front_z], dtype=np.float32)
+    camera_front = normalize(camera_front)
+
+    camera_up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+    camera_right = normalize(np.cross(camera_front, camera_up))
+    return camera_front, camera_right, camera_up
 
 def load_texture_image(image_path):
     im = Image.open(image_path)
@@ -193,10 +212,14 @@ def display():
     global scale_x, scale_y, scale_z
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    cam_x = zoom * np.cos(np.radians(angle_y)) * np.cos(np.radians(angle_x))
-    cam_y = zoom * np.sin(np.radians(angle_x))
-    cam_z = zoom * np.sin(np.radians(angle_y)) * np.cos(np.radians(angle_x))
-    gluLookAt(cam_x, cam_y, cam_z, 0, 0, 0, 0, 1, 0)
+    
+    camera_front, camera_right, camera_up = compute_camera_vectors()
+    gluLookAt(cam_pos[0], cam_pos[1], cam_pos[2],
+              cam_pos[0] + camera_front[0],
+              cam_pos[1] + camera_front[1],
+              cam_pos[2] + camera_front[2],
+              camera_up[0], camera_up[1], camera_up[2])
+    
     glLightfv(GL_LIGHT0, GL_POSITION, [100, 100, 100, 1])
     glPushMatrix()
     if Qwireframe:
@@ -216,15 +239,17 @@ def idle():
     glutPostRedisplay()
 
 def mouse(button, state, x, y):
-    global mouse_left_down, mouse_x, mouse_y, zoom
+    global mouse_left_down, mouse_x, mouse_y, cam_pos
     mouse_x, mouse_y = x, y
+    camera_front, camera_right, _ = compute_camera_vectors()
+
     if button == GLUT_LEFT_BUTTON:
         mouse_left_down = (state == GLUT_DOWN)
-    elif button == 3 and state == GLUT_DOWN:
-        zoom = max(10, zoom - 5)
+    elif button == 3 and state == GLUT_DOWN:  
+        cam_pos += move_speed * camera_front
         glutPostRedisplay()
-    elif button == 4 and state == GLUT_DOWN:
-        zoom = min(500, zoom + 5)
+    elif button == 4 and state == GLUT_DOWN: 
+        cam_pos -= move_speed * camera_front
         glutPostRedisplay()
 
 def motion(x, y):
@@ -232,9 +257,9 @@ def motion(x, y):
     dx = x - mouse_x
     dy = y - mouse_y
     if mouse_left_down:
-        angle_y += dx * 0.5
-        angle_x += dy * 0.5
-        angle_x = max(-89, min(89, angle_x))
+        angle_y += -dx * 0.3
+        angle_x += -dy * 0.3
+        angle_x = np.clip(angle_x, -89, 89)
     mouse_x, mouse_y = x, y
     glutPostRedisplay()
 
@@ -296,6 +321,51 @@ def keyboard(key, x, y):
     except SystemExit:
         pass
 
+def special_keys(key, x, y):
+    global cam_pos
+    camera_front, camera_right, _ = compute_camera_vectors()
+
+    if key == GLUT_KEY_UP:
+        cam_pos += move_speed * camera_front
+        glutPostRedisplay()
+    elif key == GLUT_KEY_DOWN:
+        cam_pos -= move_speed * camera_front
+        glutPostRedisplay()
+    elif key == GLUT_KEY_LEFT:
+        cam_pos -= move_speed * camera_right
+        glutPostRedisplay()
+    elif key == GLUT_KEY_RIGHT:
+        cam_pos += move_speed * camera_right
+        glutPostRedisplay()
+
+
+def center_object():
+    global pos_x, pos_y, pos_z
+    bbox = calculate_bounding_box()
+    if bbox is not None:
+        center_x = (bbox[0] + bbox[1]) / 2.0
+        center_y = (bbox[2] + bbox[3]) / 2.0
+        center_z = (bbox[4] + bbox[5]) / 2.0
+        pos_x = -center_x
+        pos_y = -center_y
+        pos_z = -center_z
+
+
+def auto_position_camera():
+    global cam_pos, angle_x, angle_y
+    bbox = calculate_bounding_box()
+    if bbox is not None:
+        size_x = bbox[1] - bbox[0]
+        size_y = bbox[3] - bbox[2] 
+        size_z = bbox[5] - bbox[4]
+        max_size = max(size_x, size_y, size_z)
+        
+        distance = max_size * 1.1 
+        cam_pos = np.array([0.0, max_size * 0.5, distance], dtype=np.float32)
+        angle_x = -20.0  
+        angle_y = 180.0   
+
+
 def main():
     global scene
     scene = pywavefront.Wavefront(obj_path, create_materials=True, collect_faces=True, strict=False)
@@ -303,15 +373,19 @@ def main():
     print(f"Bounding box : X[{bbox[0]}, {bbox[1]}], Y[{bbox[2]}, {bbox[3]}], Z[{bbox[4]}, {bbox[5]}]")
     polygons, triangles, vertices = count_mesh_elements()
     print(f"Polygones : {polygons}, Triangles : {triangles}, Vertices : {vertices}")
+    
+    
+    center_object()
+    auto_position_camera()
 
     glutInit()
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
     if QFullScreen:
-        glutCreateWindow(b"Load OBJ multitexture optimise VBO")
+        glutCreateWindow(b"Load OBJ multitexture optimise VBO Explorer")
         glutFullScreen()
     else:
         glutInitWindowSize(800, 600)
-        glutCreateWindow(b"Load OBJ multitexture optimise VBO")
+        glutCreateWindow(b"Load OBJ multitexture optimise VBO Explorer")
     init()
     glutDisplayFunc(display)
     glutReshapeFunc(reshape)
@@ -319,6 +393,7 @@ def main():
     glutMouseFunc(mouse)
     glutMotionFunc(motion)
     glutKeyboardFunc(keyboard)
+    glutSpecialFunc(special_keys) 
     glutMainLoop()
 
 if __name__ == "__main__":
