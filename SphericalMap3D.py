@@ -44,6 +44,9 @@ animate_light = True
 
 QFullScreen = False
 
+qWireframe = False
+
+
 def load_texture(path):
     im = Image.open(path)
     im = im.convert("RGB")
@@ -185,6 +188,7 @@ def reshape(w, h):
     glMatrixMode(GL_MODELVIEW)
 
 def display():
+    global qWireframe
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
@@ -204,6 +208,11 @@ def display():
 
     glBindTexture(GL_TEXTURE_2D, texture_id)
     glColor3f(1, 1, 1)
+    
+    if qWireframe:
+       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+    else:
+       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     glEnableClientState(GL_VERTEX_ARRAY)
     glEnableClientState(GL_TEXTURE_COORD_ARRAY)
@@ -250,7 +259,7 @@ def motion(x, y):
     glutPostRedisplay()
 
 def keyboard(key, x, y):
-    global height_scale, animate_light, water_level
+    global height_scale, animate_light, water_level, qWireframe
     try:
         key = key.decode("utf-8")
         if key == "q" or key == "\x1b":
@@ -277,6 +286,9 @@ def keyboard(key, x, y):
             glutPostRedisplay()
         elif key == "l":
             animate_light = not animate_light
+        elif key.lower() == "w":
+            qWireframe = not qWireframe
+            glutPostRedisplay()
     except SystemExit:
         pass
 
