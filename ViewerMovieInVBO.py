@@ -24,6 +24,8 @@ obj_scale_x, obj_scale_y, obj_scale_z = 1.0, 1.0, 1.0
 frame_width = None
 frame_height = None
 
+qDrawLineOnImage = True 
+
 def create_vbos(width, height):
     global vbo_vertices, vbo_texcoords
     vertices = np.array([
@@ -194,6 +196,17 @@ def check_video_click(window, mouse_x, mouse_y):
         return (video_x, video_y)
     return None
 
+
+def draw_line_on_image(num_frame, nb_frames,img):
+    height, width = img.shape[:2]
+    ratio = num_frame / nb_frames
+    x = int(ratio * width)    
+    image_with_line = img.copy()
+    cv2.line(image_with_line,(0, height-9), (x, height-9),(0, 0, 0), 6)
+    cv2.line(image_with_line,(0, height-10), (x, height-10),(0, 0, 125), 6)
+    cv2.line(image_with_line,(0, height-10), (x, height-10),(0, 0, 255), 3)
+    return image_with_line
+
 def main(video_path, enable_spotlight=False, enable_fullscreen=False):
     global paused, cap, texture_id, vbo_vertices, vbo_texcoords, distance
     global fps, fps_ori, frame_width, frame_height
@@ -216,6 +229,7 @@ def main(video_path, enable_spotlight=False, enable_fullscreen=False):
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
     fps_ori = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if not cap.isOpened():
         glfw.terminate()
         raise RuntimeError("Unable to open video file")
@@ -249,6 +263,7 @@ def main(video_path, enable_spotlight=False, enable_fullscreen=False):
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_LIGHT0)
 
+    current_frame = 0 
     while not glfw.window_should_close(window):
         glfw.poll_events()
         if not paused:
@@ -259,7 +274,15 @@ def main(video_path, enable_spotlight=False, enable_fullscreen=False):
                 ret, frame = cap.read()
             if ret and frame is not None:
                 frame_height, frame_width = frame.shape[:2]
+                current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+
+                if qDrawLineOnImage :
+                    frame = draw_line_on_image(current_frame, frame_count, frame)
+                    
                 update_texture(frame)
+                
+                
+        
         gl.glViewport(0, 0, window_w, window_h)
         gl.glClearColor(0.1, 0.1, 0.1, 1.0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
