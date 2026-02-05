@@ -24,8 +24,8 @@ Qwireframe = False
 QFullScreen = False
 QTexture = True  
 
-scene_objects = []   # Liste des objets chargés (instances Object3D)
-texture_ids = {}     # Caché de textures OpenGL
+scene_objects = []   # List of loaded objects (Object3D instances)
+texture_ids = {}     # Textures
 
 def normalize(v):
     norm = np.linalg.norm(v)
@@ -63,7 +63,7 @@ class Object3D:
         self.rot = list(rot)
         self.scale = list(scale)
         self.scene = pywavefront.Wavefront(obj_path, create_materials=True, collect_faces=True, strict=False)
-        self.vbo_dict = {}   # par objet
+        self.vbo_dict = {}  
         self.init_textures()
         self.create_vbos()
 
@@ -77,7 +77,7 @@ class Object3D:
                         texture_ids[tex_path] = tid
                     except Exception as e:
                         print(f"Error loading texture {tex_path}: {e}")
-        # Référence OpenGL texture dans chaque material (utilisé au rendu)
+        # OpenGL texture reference in each material...
         for name, material in self.scene.materials.items():
             if getattr(material, "texture", None) is not None:
                 material._glid = texture_ids.get(material.texture.path)
@@ -262,7 +262,7 @@ def main():
     parser.add_argument('--Fullscreen', type=int, default=0, help='Enable fullscreen mode')
     args = parser.parse_args()
 
-    # Charger chaque objet indiqué sur la ligne de commande
+    # Load each object specified on the command line
     for objspec in args.Obj:
         path, name, posx, posy, posz, roty, scale = objspec
         obj_path = os.path.join(path, name)
@@ -294,7 +294,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # ... 
+
+    
 
 
-
-# python programme.py --Obj . objet1.obj 0 0 0 0 0.1 --Obj ./models objet2.obj 3 0 5 45 0.1 --Fullscreen 0

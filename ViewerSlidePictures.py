@@ -208,7 +208,7 @@ def main(directory_path, enable_spotlight=False, enable_fullscreen=False):
         gluLookAt(cam_x, cam_y, cam_z, 0, 0, 0, 0, 1, 0)
         
         
-        # Position, rotation et scale de l'objet
+        # Position, rotation ,scale
         gl.glTranslatef(obj_pos_x, obj_pos_y, obj_pos_z)
         gl.glRotatef(obj_rot_angle_x, 1, 0, 0)
         gl.glRotatef(obj_rot_angle_y, 0, 1, 0)
